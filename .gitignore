@@ -1,0 +1,10 @@
+*.pyc
+localsettings.py
+.project
+.pydevproject
+.settings
+*.swp
+*.swo
+*.swn
+__pycache__
+.session.vim
