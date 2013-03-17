@@ -3,6 +3,8 @@
 redmine_elsa_sync.py
 Created on 15.03.2013
 @author: tobixx0
+
+Fetches event tickets from redmine and writes them to an ELSAEvent database.
 '''
 from configparser import ConfigParser
 from dateutil.rrule import rrule 
@@ -47,6 +49,13 @@ project_mappings = load_project_mappings()
 
 
 def get_issues(start_dt=None, end_dt=None):
+    """Fetch event issues from redmine server created in a given time span
+    ]start_dt, end_dt[.
+    If no parameter is given, all issues are fetched.
+    
+    :param start_dt: datetime which marks the start of the time interval
+    :param end_dt: datetime, end of the time interval
+    """
         fargs = {}
         start_timestr = start_dt.strftime("%Y-%m-%d") if start_dt else "1970-01-01"
         end_timestr = end_dt.strftime("%Y-%m-%d") if end_dt else "2037-12-31"
@@ -61,6 +70,12 @@ def get_issues(start_dt=None, end_dt=None):
     
     
 def create_or_update_event(issue, url, event=None):
+    """Conversion from redmine resource object to ELSAEvent DB object.
+    
+    :param issue: activeResource objects which represents an event.
+    :param url: Redmine API URL for the event like https://red.de/issues/123
+    :param event: event DB object to update. Create new one if none is given.
+    """
     now = datetime.now()
     if not event:
         event = Event()
@@ -104,6 +119,17 @@ def create_or_update_event(issue, url, event=None):
 
 
 def update_event_database(redmine_issues, last_update_dt, start_dt=None, end_dt=None):
+    """Updates ELSAEvent database with some event issues.
+    Ignore events with a start datetime outside of ]start_dt, end_dt[.
+    
+    :param redmine_issues: activeResource objects which represent events.
+    :param last_update_dt: datetime for last DB update.
+    :param start_dt: start of datetime interval
+    :param end_dt: end of datetime interval
+    
+    TODO: issues with status "abgesagt".
+    """
+    
     # map REST url for issue to issue object
     urls_to_issues = {URL_PATTERN + str(issue.id) : issue for issue in redmine_issues}
 #    logg.debug("created urls %s", urls_to_issues.keys())
