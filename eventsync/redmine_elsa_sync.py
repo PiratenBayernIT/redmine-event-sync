@@ -2,7 +2,7 @@
 '''
 redmine_elsa_sync.py
 Created on 15.03.2013
-@author: tobixx0
+@author: escaP
 
 Fetches event tickets from redmine and writes them to an ELSAEvent database.
 '''
@@ -12,7 +12,7 @@ from datetime import datetime
 import logging
 from sqlalchemy.sql import and_
 
-from .redmine.redmineapi import Issue, Tracker, Project
+from .redmine.redmineapi import Project
 from .elsaevent.datamodel import Event, User, Group, Category, Status
 from . import elsaevent
 from .redmine.localsettings import REDMINE_HOST
@@ -48,29 +48,8 @@ def load_project_mappings():
 project_mappings = load_project_mappings()
 
 
-def get_issues(start_dt=None, end_dt=None):
-    """Fetch event issues from redmine server created in a given time span
-    ]start_dt, end_dt[.
-    If no parameter is given, all issues are fetched.
-    
-    :param start_dt: datetime which marks the start of the time interval
-    :param end_dt: datetime, end of the time interval
-    """
-        fargs = {}
-        start_timestr = start_dt.strftime("%Y-%m-%d") if start_dt else "1970-01-01"
-        end_timestr = end_dt.strftime("%Y-%m-%d") if end_dt else "2037-12-31"
-        if start_dt or end_dt:
-            fargs["created_on"] = "><{}|{}".format(start_timestr, end_timestr) 
-            logg.debug("time constraints given, start %s end %s, encoded %s", start_timestr, end_timestr, fargs["created_on"])
-        tracker_termin_id = Tracker.find_first_by_name("Termin").id
-        tracker_termin_ext_id = Tracker.find_first_by_name("Termin extern").id
-        termine = Issue.find(tracker_id=tracker_termin_id, **fargs)
-        termine_ext = Issue.find(tracker_id=tracker_termin_ext_id, **fargs)
-        return termine + termine_ext
-    
-    
-def create_or_update_event(issue, url, event=None):
-    """Conversion from redmine resource object to ELSAEvent DB object.
+def create_or_update_event_from_issue(issue, url, event=None):
+    """Conversion from redmine resource object (issue) to ELSAEvent DB object (event).
     
     :param issue: activeResource objects which represents an event.
     :param url: Redmine API URL for the event like https://red.de/issues/123
@@ -158,7 +137,7 @@ def update_event_database(redmine_issues, last_update_dt, start_dt=None, end_dt=
                       datetime.strftime(issue.updated_on, REDMINE_DATETIME_FORMAT),
                       datetime.strftime(last_update_dt, REDMINE_DATETIME_FORMAT))
             try:
-                event = create_or_update_event(issue, url, event)
+                event = create_or_update_event_from_issue(issue, url, event)
             except Exception as e:
                 logg.exception("error occured for issue #%s: %s", issue.id, e)
         del urls_to_issues[url]
@@ -167,7 +146,7 @@ def update_event_database(redmine_issues, last_update_dt, start_dt=None, end_dt=
     logg.info("%s new events found", len(urls_to_issues))
     for url, issue in urls_to_issues.items():
         try:
-            event = create_or_update_event(issue, url)
+            event = create_or_update_event_from_issue(issue, url)
         except Exception as e:
             logg.exception("error occured for issue #%s: %s", issue.id, e)
         else:

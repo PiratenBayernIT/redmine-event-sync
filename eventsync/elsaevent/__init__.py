@@ -2,7 +2,7 @@
 '''
 elsaevent
 Created on 15.03.2013
-@author: tobixx0
+@author: escaP
 '''
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker

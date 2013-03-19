@@ -2,7 +2,7 @@
 '''
 .py
 Created on 15.03.2013
-@author: tobixx0
+@author: escaP
 '''
 from datetime import datetime
 import logging
