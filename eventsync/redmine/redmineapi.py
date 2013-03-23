@@ -1,8 +1,9 @@
 import logging
 from pyactiveresource.activeresource import ActiveResource
-from .resourceaddons import find_extended, get_all_resource_objects, find_first_by_attrib
+from .resourceaddons import find_extended, get_all_resource_objects, find_by_attrib
 from .localsettings import API_SITE
-from eventsync.redmine.resourceaddons import date_attrib, datetime_attrib
+from eventsync.redmine.resourceaddons import date_attrib, datetime_attrib,\
+    custom_fields
 
 logg = logging.getLogger(__name__)
 
@@ -63,6 +64,7 @@ class BaseRedmineResource(ActiveResource):
 
 
 @find_extended
+@custom_fields
 @datetime_attrib("updated_on")
 @datetime_attrib("created_on")
 @date_attrib("start_date")
@@ -71,7 +73,7 @@ class Issue(BaseRedmineResource):
     pass
 
 
-@find_first_by_attrib("identifier")
+@find_by_attrib("identifier")
 class Project(BaseRedmineResource):
     def all_subprojects(self):
         pass
@@ -81,7 +83,7 @@ class Project(BaseRedmineResource):
 #    pass
 
 
-@find_first_by_attrib("login")
+@find_by_attrib("login")
 class User(BaseRedmineResource):
     pass
 
@@ -124,7 +126,7 @@ class IssueStatus(BaseRedmineResource):
         return map(func, cls.find())
 
 
-@find_first_by_attrib("name")
+@find_by_attrib("name")
 class Tracker(BaseRedmineResource):
     pass
 
@@ -145,6 +147,16 @@ class Group(BaseRedmineResource):
     pass
 
 
+### plugins
+
+# contact plugin
+
+@find_extended
+@find_by_attrib("company")
+class Contact(BaseRedmineResource):
+    pass
+
+
 class NiceDict(dict):
     def __init__(self, *args, **kwargs):
         dict.__init__(self, *args, **kwargs)
@@ -162,21 +174,8 @@ def create_stammtisch_termin(d):
     t.assigned_to_id = User.find_first_by_login("escaP").id
     t.tracker_id = Tracker.find_first_by_name("Termin").id
     t.project_id = Project.find_first_by_identifier("opf_termine").id
-    t.start_date = d.strftime(us_dateformat)
-    t.due_date = d.strftime(us_dateformat)
-    t.category = 50
+    t.start_date = d
+    t.due_date = d
     custom_fields = [dict(name="Startzeit", id=2, value="19:00"), dict(name="Ende", id=3, value="23:00")]
     t.custom_fields = custom_fields
     t.save()
-
-
-make_logger()
-
-
-if __name__ == "__main__":
-    pass
-    #create_stammtisch_termin(datetime.date(2013, 3, 5))
-    #print(Project.all())
-
-
-

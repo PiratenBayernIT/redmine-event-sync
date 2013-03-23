@@ -4,6 +4,7 @@ from functools import wraps, partial
 from datetime import datetime, time, date
 
 from .localsettings import REDMINE_DATETIME_FORMAT, REDMINE_DATE_FORMAT, REDMINE_TIME_FORMAT
+from pyactiveresource.element_containers import ElementDict
 
 logg = logging.getLogger(__name__)
 
@@ -21,6 +22,10 @@ def get_all_resource_objects(cls):
 
 def find_extended(cls):
     def _find_extended(cls, *args, **kwargs):
+        """Find which searches all objects. 
+        Redmine returns only a limited number of objects for some resources,
+        so we have to repeat the query multiple times.
+        """
         cur_result = [None]
         result = []
         fargs = kwargs.copy()
@@ -39,15 +44,21 @@ def find_extended(cls):
     return cls
 
 
-def find_first_by_attrib(attrib):
-    def _find_first_by_attrib(cls):
-        def _func(cls, value):
+def find_by_attrib(attrib):
+    """Add two find helpers for easy filtering by single attributes.
+    This will add two methods to the decorated class:
+    * cls.find_first_by_<attrib>(value)
+    * cls.find_all_by_<attrib>(value)
+    """
+    def _find_by_attrib(cls):
+        find_meth = cls._find_orig if hasattr(cls, "_find_orig") else cls.find
+        def __find_first_by_attrib(cls, value):
             offset = 0
             limit = 60
 
             cur_result = [None]
             while cur_result:
-                cur_result = cls.find(limit=limit, offset=offset)
+                cur_result = find_meth(limit=limit, offset=offset)
                 filtered = filter(lambda u: getattr(u, attrib) == value, cur_result)
                 try:
                     return next(filtered)
@@ -56,30 +67,23 @@ def find_first_by_attrib(attrib):
                 offset += len(cur_result)
             return None
 
-        setattr(cls, "find_first_by_" + attrib, classmethod(_func))
-        return cls
-
-    return _find_first_by_attrib
-
-
-def find_all_by_attrib(attrib):
-    def _find_all_by_attrib(cls):
-        def _func(cls, value):
+        def __find_all_by_attrib(cls, value):
             offset = 0
             limit = 60
             cur_result = [None]
             result = []
             while cur_result:
-                cur_result = cls.find(limit=limit, offset=offset)
+                cur_result = find_meth(limit=limit, offset=offset)
                 filtered = filter(lambda u: getattr(u, attrib) == value, cur_result)
                 result += filtered
                 offset += len(cur_result)
             return result
-
-        setattr(cls, "find_all_by_" + attrib, classmethod(_func))
+        
+        setattr(cls, "find_first_by_" + attrib, classmethod(__find_first_by_attrib))
+        setattr(cls, "find_all_by_" + attrib, classmethod(__find_all_by_attrib))
         return cls
 
-    return _find_all_by_attrib
+    return _find_by_attrib
 
 
 # factory function, see below for derived decorators
@@ -117,3 +121,52 @@ def _datetime_attrib(klass, attrib):
 datetime_attrib = partial(_datetime_attrib, datetime)
 date_attrib = partial(_datetime_attrib, date)
 time_attrib = partial(_datetime_attrib, time)
+
+
+def custom_fields(cls):
+    """Add some sugar to Redmine API objects for custom fields.
+    Custom fields can be read like an object attribute, like a.end, and
+    written like a.end = 6.
+    The custom field object is synchronized automatically (only client, not on the server!)
+    """
+    logg.info("cust fields for %s", cls)
+    orig_getattr = cls.__getattr__
+    orig_setattr = cls.__setattr__
+    orig_init = cls.__init__
+    
+    def _getattr(self, attrib):
+        try:
+            cf = self.__dict__["_custom_fields"][attrib]
+            self.__dict__[attrib] = cf.value
+            return cf.value
+        except:
+            return orig_getattr(self, attrib)
+            
+    def _setattr(self, attrib, value):
+        try:
+            cf = self.__dict__["_custom_fields"][attrib]
+            self.__dict__[attrib] = value
+            cf.value = value
+        except:
+            orig_setattr(self, attrib, value)
+    
+        
+    def _init(self, *args):
+        orig_init(self, *args)
+        try:
+            custom_fields = self.__dict__["attributes"]["custom_fields"]
+            if not hasattr(custom_fields[0], "name"):
+                custom_fields = args[0]["custom_fields"]
+        except:
+            return
+        else:
+            custom_field_dict = {}
+            for cf in custom_fields:
+                custom_field_dict[cf.name.lower()] = cf
+            self.__dict__["_custom_fields"] = custom_field_dict
+                
+            
+    setattr(cls, "__getattr__", _getattr)
+    setattr(cls, "__setattr__", _setattr)
+    setattr(cls, "__init__", _init)
+    return cls
