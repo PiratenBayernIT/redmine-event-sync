@@ -7,6 +7,7 @@ Created on 10.04.2013
 from datetime import datetime
 import logging
 import shelve
+import sys
 from time import sleep
 
 import eventsync.redmine_elsa_sync as redmine_elsa_sync
