@@ -1,3 +1,4 @@
 # -*- coding: utf-8 -*-
 
-SQLALCHEMY_CONNECTION_STR = 'mysql+oursql://events:events@localhost/events'
+ELSA_SQLALCHEMY_CONNECTION_STR = 'mysql+oursql://events:events@localhost/events'
+ELSA_REDMINE_USERNAME = "redmine_by"

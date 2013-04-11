@@ -16,6 +16,7 @@ from .redmine.redmineapi import Project
 from .elsaevent.datamodel import Event, User, Group, Category, Status
 from . import elsaevent
 from .redmine.localsettings import REDMINE_HOST, REDMINE_SCHEMA, REDMINE_DATETIME_FORMAT
+from .elsaevent.localsettings import ELSA_REDMINE_USERNAME, ELSA_DEFAULT_CATEGORY
 
 logg = logging.getLogger(__name__)
 URL_PATTERN = "{}://{}/issues/".format(REDMINE_SCHEMA, REDMINE_HOST)
@@ -24,8 +25,8 @@ esession = elsaevent.session
 query = esession.query 
 event_query = query(Event)
 
-redmine_user = query(User).filter_by(username="redmine").one()
-default_category = query(Category).filter_by(name="Schmarnn").one()
+redmine_user = query(User).filter_by(username=ELSA_REDMINE_USERNAME).one()
+default_category = query(Category).filter_by(name=ELSA_DEFAULT_CATEGORY).one()
 status_new = query(Status).filter_by(name="Neu").one()
 status_confirmed = query(Status).filter_by(name="Bestätigt").one()
 status_cancelled = query(Status).filter_by(name="Abgesagt").one()
