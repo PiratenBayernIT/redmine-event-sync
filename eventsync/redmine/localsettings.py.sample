@@ -1,0 +1,16 @@
+# -*- coding: utf-8 -*-
+'''
+eventsync.redmine.localsettings.py
+Created on 15.03.2013
+@author: escaP
+'''
+
+API_KEY = "e317fad01106f457a775004684346a33b6e5312d"
+REDMINE_SCHEMA = "https"
+REDMINE_HOST = "redmine.piratenpartei-bayern.de"
+API_SITE = "https://{}@{}".format(API_KEY, REDMINE_HOST)
+REDMINE_DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+REDMINE_DATE_FORMAT = "%Y-%m-%d"
+REDMINE_TIME_FORMAT = "%H:%M:%S"
+READABLE_DATE_FORMAT = "%d.%m.%Y"
+READABLE_TIME_FORMAT = "%H:%M"
