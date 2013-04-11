@@ -33,11 +33,11 @@ def _make_time_constraint(start_dt=None, end_dt=None):
 
 
 def get_event_issues(fetch_closed=False, start_dt=None, end_dt=None):
-    """Fetch event issues from redmine server created in a given time span
+    """Fetch event issues from redmine server updated in a given time span
     ]start_dt, end_dt[.
     If no parameter is given, all issues are fetched.
     
-    :param fetched_closed: Redmine fetches open issues by default, also get closed ones when True. 
+    :param fetch_closed: Redmine fetches open issues by default, also get closed ones when True. 
     :param start_dt: datetime which marks the start of the time interval
     :param end_dt: datetime, end of the time interval
     """
@@ -46,14 +46,14 @@ def get_event_issues(fetch_closed=False, start_dt=None, end_dt=None):
     if fetch_closed:
         fargs["status_id"]= "*"
     if time_constraint:
-        fargs["created_on"] = time_constraint
+        fargs["updated_on"] = time_constraint
     termine = Issue.find(tracker_id=tracker_termin.id, **fargs)
     termine_ext = Issue.find(tracker_id=tracker_termin_ext.id, **fargs)
     return termine + termine_ext
     
 
 def get_cancelled_issues(start_dt=None, end_dt=None):
-    """Fetch cancelled issues from redmine server created in a given time span
+    """Fetch cancelled issues from redmine server updated in a given time span
     ]start_dt, end_dt[.
     If no parameter is given, all issues are fetched.
     
@@ -63,7 +63,7 @@ def get_cancelled_issues(start_dt=None, end_dt=None):
     fargs = {}
     time_constraint = _make_time_constraint(start_dt, end_dt)
     if time_constraint:
-        fargs["created_on"] = time_constraint
+        fargs["updated_on"] = time_constraint
     cancelled_status_id = next(IssueStatus.filter(lambda s: s.name == "Abgesagt")).id
     c_termine = Issue.find(tracker_id=tracker_termin.id, status_id=cancelled_status_id, **fargs)
     c_termine_ext = Issue.find(tracker_id=tracker_termin_ext.id, status_id=cancelled_status_id, **fargs)

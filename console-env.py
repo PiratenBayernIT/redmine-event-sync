@@ -24,9 +24,14 @@ s = eventsync.elsaevent.session
 q = s.query
 
 midnight_today = datetime.now() - relativedelta(hour=0, minute=0)
-i = Issue.find(532)
-value = i.wiederholungsart
-print(value)
-ni = eventsync.redmine.issues.create_issues_from_template(i)[0]
-print(ni)
-ni.save()
+midnight_yesterday = datetime.now() - relativedelta(days=1, hour=0, minute=0)
+midnight_tomorrow = datetime.now() - relativedelta(days=-1, hour=0, minute=0)
+iss_with_new = get_event_issues(False, midnight_yesterday, midnight_tomorrow)
+iss = list(filter(lambda i: not i.status.name == "Neu", iss_with_new))
+
+# i = Issue.find(532)
+# value = i.wiederholungsart
+# print(value)
+# ni = eventsync.redmine.issues.create_issues_from_template(i)[0]
+# print(ni)
+#ni.save()

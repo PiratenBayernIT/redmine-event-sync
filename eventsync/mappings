@@ -1,8 +1,8 @@
 [projects]
 opf_termine = BzV Oberpfalz
 opf_bzvo = BzV Oberpfalz
-weiden-neustadt = Stammtisch Weiden-Neustadt
+opf_wen-new_termine = Stammtisch Weiden-Neustadt
 verkehrspolitik = AG Verkehrspolitik
-opf_kv_rgb = KV Regensburg
+opf_kv_rgb_termine = KV Regensburg
 test = Test
 test_termine = Test

@@ -26,6 +26,7 @@ event_query = query(Event)
 
 redmine_user = query(User).filter_by(username="redmine").one()
 default_category = query(Category).filter_by(name="Schmarnn").one()
+status_new = query(Status).filter_by(name="Neu").one()
 status_confirmed = query(Status).filter_by(name="Bestätigt").one()
 status_cancelled = query(Status).filter_by(name="Abgesagt").one()
 
@@ -67,28 +68,24 @@ def create_or_update_event_from_issue(issue, url, event=None):
     event.enddate = issue.due_date
     event.body = issue.description
     event.group_id = project_mappings[issue.project.id]
-    if issue.status.name == "Bestätigt":
+    if issue.status.name == "Neu":
+        event.status = status_new
+    elif issue.status.name == "Bestätigt":
         event.status = status_confirmed
     elif issue.status.name == "Abgesagt":
         event.status = status_cancelled
     else:
         raise Exception("wrong issue status {} for issue #{}".format(issue.status.name, issue.id))
     event.user = redmine_user
-    for name, value in issue._custom_fields.items():
-        if name == "Startzeit":
-            event.starttime = value
-        elif name == "Ende":
-            event.endtime = value
-        elif name == "Veranstaltungsort":
-            event.location = value
-        elif name == "Adresse":
-            event.address = value
-        elif name == "Kategorien":
-            # multi value field is given as a simple list
-            for category_name in value:
-                category = query(Category).filter_by(name=category_name).first()
-                if category is not None:
-                    event.categories.append(category)
+    event.starttime = issue.startzeit
+    event.endtime = issue.ende
+    event.location = issue.veranstaltungsort
+    event.address = issue.adresse
+    # multi value field is given as a simple list
+    for category_name in issue.kategorien:
+        category = query(Category).filter_by(name=category_name).first()
+        if category is not None:
+            event.categories.append(category)
             
     event.remarks = "Hinweis: Event automatisch generiert von redmine_elsa_sync. Bitte nicht verändern, sonst gibt's Ärger!"
     event.timezone = "Europe/Berlin"
@@ -102,6 +99,36 @@ def create_or_update_event_from_issue(issue, url, event=None):
     return event
 
 
+def _update_existing_event(last_update_dt, urls_to_issues, event):
+    assert isinstance(event, Event)
+    url = event.url
+    issue = urls_to_issues.get(url)
+    if issue is None:
+        logg.warn("issue for event %s not found!", event.title)
+        return
+    
+    if event.status == status_confirmed:
+        if event.modified > last_update_dt:
+            logg.warn("oops, event '%s' was updated in ELSAEvent (%s > %s), this should not happen!", event.title, 
+                      datetime.strftime(event.modified, REDMINE_DATETIME_FORMAT), 
+                      datetime.strftime(last_update_dt, REDMINE_DATETIME_FORMAT))
+        if issue.updated_on > last_update_dt:
+            logg.info("event '%s' was changed in Redmine issue #%s (%s > %s), update", event.title, issue.id, 
+                      datetime.strftime(issue.updated_on, REDMINE_DATETIME_FORMAT), 
+                      datetime.strftime(last_update_dt, REDMINE_DATETIME_FORMAT))
+            if issue.status.name == "Abgesagt":
+                logg.info("last event was cancelled")
+            try:
+                event = create_or_update_event_from_issue(issue, url, event)
+            except Exception as e:
+                logg.exception("error occured for issue #%s: %s", issue.id, e)
+        else:
+            logg.debug("unchanged confirmed event #%s", issue.id)
+    else:
+        logg.debug("skipping already cancelled event #%s", issue.id)
+    del urls_to_issues[url]
+
+
 def update_event_database(redmine_issues, last_update_dt, start_dt=None, end_dt=None):
     """Updates ELSAEvent database with some event issues.
     Ignore events with a start datetime outside of ]start_dt, end_dt[.
@@ -110,8 +137,6 @@ def update_event_database(redmine_issues, last_update_dt, start_dt=None, end_dt=
     :param last_update_dt: datetime for last DB update.
     :param start_dt: start of datetime interval
     :param end_dt: end of datetime interval
-    
-    TODO: issues with status "abgesagt".
     """
     
     # map REST url for issue to issue object
@@ -129,31 +154,7 @@ def update_event_database(redmine_issues, last_update_dt, start_dt=None, end_dt=
     logg.info("%s matching events in ELSAEvent DB", len(events))
     now = datetime.utcnow()
     for event in events:
-        assert isinstance(event, Event)
-        url = event.url
-        issue = urls_to_issues[url]
-        if event.status == status_confirmed:
-            if event.modified > last_update_dt:
-                logg.warn("oops, event '%s' was updated in ELSAEvent (%s > %s), this should not happen!", 
-                          event.title, 
-                          datetime.strftime(event.modified, REDMINE_DATETIME_FORMAT),
-                          datetime.strftime(last_update_dt, REDMINE_DATETIME_FORMAT))
-            if issue.updated_on > last_update_dt:
-                logg.info("event '%s' was changed in Redmine issue #%s (%s > %s), update", 
-                          event.title, issue.id,
-                          datetime.strftime(issue.updated_on, REDMINE_DATETIME_FORMAT),
-                          datetime.strftime(last_update_dt, REDMINE_DATETIME_FORMAT))
-                if issue.status.name == "Abgesagt":
-                    logg.info("last event was cancelled")
-                try:
-                    event = create_or_update_event_from_issue(issue, url, event)
-                except Exception as e:
-                    logg.exception("error occured for issue #%s: %s", issue.id, e)
-            else:
-                logg.debug("unchanged confirmed event #%s", issue.id)
-        else:
-            logg.debug("skipping already cancelled event #%s", issue.id)
-        del urls_to_issues[url]
+        _update_existing_event(last_update_dt, urls_to_issues, event)
         
     # remaining issues in urls_to_issues are new, insert them
     logg.info("%s new events found", len(urls_to_issues))

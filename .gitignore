@@ -8,3 +8,4 @@ localsettings.py
 *.swn
 __pycache__
 .session.vim
+eventsync.shelve
