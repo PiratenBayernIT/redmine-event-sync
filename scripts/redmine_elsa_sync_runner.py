@@ -10,6 +10,9 @@ import shelve
 import sys
 from time import sleep
 
+sys.path.append(".")
+print(sys.path)
+
 import eventsync.redmine_elsa_sync as redmine_elsa_sync
 from eventsync.redmine.redmineapi import *
 from eventsync.redmine.issues import get_event_issues
@@ -17,9 +20,9 @@ import eventsync.elsaevent
 from eventsync.elsaevent.datamodel import *
 
 logging.basicConfig(level=logging.DEBUG)
+logg = logging.getLogger()
 
 shv = shelve.open("eventsync.shelve")
-
 
 def do_sync():
     last_updated = shv["last_updated"]
@@ -40,6 +43,7 @@ if __name__ == "__main__":
         # run sync every 'interval' seconds
         while 1:
             do_sync()
+            logg.info("sleeping for %s seconds", interval)
             sleep(interval)
     else:
         # run it once and exit
