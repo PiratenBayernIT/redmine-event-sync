@@ -56,19 +56,23 @@ def create_or_update_event_from_issue(issue, url, event=None):
     :param issue: activeResource objects which represents an event.
     :param url: Redmine API URL for the event like https://red.de/issues/123
     :param event: event DB object to update. Create new one if none is given.
+    :returns: Updated or created event object. None if project for issue is not mapped.
     """
     now = datetime.utcnow()
     if not event:
         event = Event()
         event.created = now
     assert isinstance(event, Event)
+    event.group_id = project_mappings.get(issue.project.id)
+    if event.group_id is None:
+        logg.warn("don't create event for unmapped project %s (issue #%s)", issue.project.id, issue.id)
+        return None
     event.modified = now
     event.url = url
     event.title = issue.subject
     event.startdate = issue.start_date
     event.enddate = issue.due_date
     event.body = issue.description
-    event.group_id = project_mappings[issue.project.id]
     if issue.status.name == "Neu":
         event.status = status_new
     elif issue.status.name == "Bestätigt":
@@ -165,7 +169,9 @@ def update_event_database(redmine_issues, last_update_dt, start_dt=None, end_dt=
         except Exception as e:
             logg.exception("error occured for issue #%s: %s", issue.id, e)
         else:
-            if event is not None:
+            if event is None:
+                logg.warn("no event was created for %s from issue #%s", event.title, issue.id)
+            else:
                 logg.info("created new event '%s' from issue #%s", event.title, issue.id)
                 esession.add(event)
         
