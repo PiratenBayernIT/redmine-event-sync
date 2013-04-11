@@ -38,9 +38,9 @@ def load_project_mappings():
     Fails when groups are not found.
     """
     c = ConfigParser()
-    c.read_file(open("eventsync/mappings"))
+    c.readfp(open("eventsync/mappings"))
     project_mappings = {}
-    for project_name, group_name in c["projects"].items():
+    for project_name, group_name in c.items("projects"):
         project_id = Project.find_first_by_identifier(project_name).id
         group_id = query(Group.id).filter_by(name=group_name).one().id
         project_mappings[project_id] = group_id
