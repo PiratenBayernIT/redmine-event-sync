@@ -173,9 +173,9 @@ def update_event_database(redmine_issues, last_update_dt, start_dt=None, end_dt=
             logg.exception("error occured for issue #%s: %s", issue.id, e)
         else:
             if event is None:
-                logg.warn("no event was created for %s from issue #%s", event.title, issue.id)
+                logg.warn("no event was created for %s from issue #%s", issue.subject, issue.id)
             else:
-                logg.info("created new event '%s' from issue #%s", event.title, issue.id)
+                logg.info("created new event '%s' from issue #%s", issue.subject, issue.id)
                 esession.add(event)
         
     esession.commit()
