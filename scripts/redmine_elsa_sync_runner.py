@@ -28,7 +28,7 @@ def do_sync():
     last_updated = shv["last_updated"]
     now = datetime.now()  
     logg.debug("last update was %s", last_updated)
-    iss_with_new = get_event_issues(False, last_updated, now)
+    iss_with_new = get_event_issues(True, last_updated, now)
     event_issues = list(filter(lambda i: not i.status.name == "Neu", iss_with_new))
     start_dt = last_updated.replace(hour=0, minute=0, second=0, microsecond=0)
     update_dt = eventsync.redmine_elsa_sync.update_event_database(event_issues, last_update_dt=last_updated, start_dt=start_dt)
