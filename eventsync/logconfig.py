@@ -17,7 +17,7 @@ def configure_logging(log_filename=None, smtp_settings=None):
         file_log.setFormatter(log_format)
         logg.addHandler(file_log)
     if smtp_settings:
-        smtp_log = logging.handlers.SMTPHandler(**smtp_settings)
+        smtp_log = logging.handlers.SMTPHandler(secure=(), **smtp_settings)
         smtp_log.setLevel(logging.WARN)
         smtp_log.setFormatter(log_format)
         logg.addHandler(smtp_log)
