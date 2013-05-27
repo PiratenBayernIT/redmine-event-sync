@@ -1,0 +1,9 @@
+# -*- coding: utf-8 -*-
+LOG_FILENAME = "redmine_event_sync.log"
+LOG_SMTP_SETTINGS = {
+    "mailhost": "localhost",
+    "fromaddr": "redmine@piratenpartei-bayern.de",
+    "toaddrs": ["a@example.com"],
+    "credentials": ("user", "password"),
+    "subject": "Redmine-Event-Sync: Problem"
+}

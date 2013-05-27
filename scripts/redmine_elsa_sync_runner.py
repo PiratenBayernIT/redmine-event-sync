@@ -5,7 +5,6 @@ Created on 10.04.2013
 @author: tobixx0
 '''
 from datetime import datetime
-import logging
 import shelve
 import sys
 from time import sleep
@@ -18,9 +17,10 @@ from eventsync.redmine.redmineapi import *
 from eventsync.redmine.issues import get_event_issues
 import eventsync.elsaevent
 from eventsync.elsaevent.datamodel import *
+from eventsync import runner_settings
 
-logging.basicConfig(level=logging.DEBUG)
-logg = logging.getLogger()
+import eventsync.logconfig
+logg = eventsync.logconfig.configure_logging(runner_settings.LOG_FILENAME, runner_settings.LOG_SMTP_SETTINGS)
 
 shv = shelve.open("eventsync.shelve")
 
