@@ -29,7 +29,7 @@ def do_sync():
     now = datetime.now()  
     logg.debug("last update was %s", last_updated)
     all_event_issues = get_event_issues(True, last_updated, now)
-    event_issues = list(filter(lambda i: not i.status.name == "Neu" or not i.status.name == "Abgeschlossen", all_event_issues))
+    event_issues = list(filter(lambda i: i.status.name not in ["Abgeschlossen", "Neu"], all_event_issues))
     start_dt = last_updated.replace(hour=0, minute=0, second=0, microsecond=0)
     update_dt = eventsync.redmine_elsa_sync.update_event_database(event_issues, last_update_dt=last_updated, start_dt=start_dt)
     logg.debug("update datetime is %s", update_dt)
